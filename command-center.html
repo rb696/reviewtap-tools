@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Command Center — ReviewTap Sites</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛠️</text></svg>" />
+<style>
+  :root { --ink:#e6eaf1; --muted:#8b97a8; --line:rgba(255,255,255,.09); --brand:#f97316; --brand-soft:rgba(249,115,22,.15); }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; color:var(--ink); background:#0a0d13; line-height:1.5; }
+  .wrap { max-width:900px; margin:0 auto; padding:28px 20px 100px; }
+  header.top { display:flex; align-items:center; gap:12px; margin-bottom:4px; }
+  .logo { width:40px; height:40px; border-radius:10px; background:linear-gradient(135deg,#fb923c,#ea580c); display:grid; place-items:center; font-size:20px; box-shadow:0 10px 26px -8px rgba(249,115,22,.55); }
+  .brand { font-weight:800; font-size:18px; color:#f4f6fa; }
+  .brand span { color:var(--brand); }
+  h1 { font-size:28px; margin:16px 0 4px; letter-spacing:-.02em; color:#f4f6fa; }
+  .sub { color:var(--muted); margin:0 0 20px; font-size:14px; }
+  section.card { background:#121722; border:1px solid var(--line); border-radius:14px; padding:18px 20px; margin-bottom:16px; }
+  .sec-title { font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:#fdba74; margin:0 0 14px; }
+  label { font-size:12.5px; font-weight:600; display:block; margin-bottom:5px; }
+  label .hint { font-weight:400; color:var(--muted); font-size:11.5px; }
+  input, textarea, select { width:100%; background:#0e131c; border:1px solid rgba(255,255,255,.1); border-radius:9px; padding:10px 11px; font:inherit; font-size:14px; color:var(--ink); resize:vertical; }
+  input::placeholder, textarea::placeholder { color:#5b6675; }
+  input:focus, textarea:focus, select:focus { outline:none; border-color:var(--brand); background:#111826; }
+  select { appearance:none; }
+  button { font:inherit; font-weight:700; font-size:13.5px; border-radius:9px; padding:10px 15px; cursor:pointer; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.05); color:var(--ink); }
+  button.primary { background:var(--brand); border-color:var(--brand); color:#0a0d13; }
+  button.sm { padding:6px 10px; font-size:12px; }
+  .row { display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; }
+  .row .f { flex:1; min-width:130px; }
+  .keybar { display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; margin-bottom:12px; }
+  .keybar .f { flex:1; min-width:200px; }
+  details.guide { margin-top:2px; }
+  details.guide summary { cursor:pointer; font-weight:600; font-size:12.5px; color:#fdba74; }
+  details.guide ol { font-size:12.5px; color:#a9b3c2; padding-left:18px; }
+  details.guide a { color:#fdba74; }
+  #status { margin-top:12px; font-size:13.5px; }
+  .err { background:rgba(239,68,68,.1); border:1px solid rgba(239,68,68,.3); color:#fca5a5; border-radius:9px; padding:10px 12px; font-size:13px; }
+  .ok { color:#4ade80; font-weight:600; }
+  .muted { color:var(--muted); font-size:12.5px; }
+  /* search results */
+  .hit { display:flex; align-items:center; gap:12px; padding:11px 0; border-top:1px solid rgba(255,255,255,.06); }
+  .hit:first-child { border-top:none; }
+  .hit .info { flex:1; min-width:0; }
+  .hit .n { font-weight:700; color:#f4f6fa; font-size:14px; }
+  .hit .m { color:var(--muted); font-size:12.5px; }
+  /* pipeline */
+  .counts { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; }
+  .pill { font-size:11.5px; font-weight:700; padding:4px 10px; border-radius:99px; border:1px solid transparent; white-space:nowrap; }
+  .lead { background:#0f141d; border:1px solid var(--line); border-radius:12px; padding:15px 16px; margin-bottom:12px; }
+  .lead .head { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .lead .name { font-weight:800; font-size:15px; color:#f4f6fa; flex:1; min-width:150px; }
+  .lead .meta { color:var(--muted); font-size:12.5px; margin-top:3px; }
+  .lead a.tel { color:#fdba74; text-decoration:none; font-weight:600; }
+  .lead .grid2 { display:grid; grid-template-columns:160px 1fr; gap:10px; margin-top:12px; align-items:start; }
+  @media (max-width:560px){ .lead .grid2 { grid-template-columns:1fr; } }
+  .lead .actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+  .lead textarea { min-height:38px; font-size:13px; }
+  .lead .sitelink { font-size:12px; color:#4ade80; word-break:break-all; }
+  /* status colours */
+  .s-new { background:rgba(148,163,184,.15); color:#cbd5e1; border-color:rgba(148,163,184,.3); }
+  .s-called { background:rgba(249,115,22,.15); color:#fdba74; border-color:rgba(249,115,22,.3); }
+  .s-interested { background:rgba(56,189,248,.15); color:#7dd3fc; border-color:rgba(56,189,248,.3); }
+  .s-demo { background:rgba(168,85,247,.15); color:#d8b4fe; border-color:rgba(168,85,247,.3); }
+  .s-won { background:rgba(74,222,128,.15); color:#4ade80; border-color:rgba(74,222,128,.3); }
+  .s-lost { background:rgba(239,68,68,.13); color:#fca5a5; border-color:rgba(239,68,68,.3); }
+  /* modal */
+  #modal { position:fixed; inset:0; background:rgba(0,0,0,.6); display:none; place-items:center; padding:20px; z-index:50; }
+  #modal.open { display:grid; }
+  .modal-box { background:#121722; border:1px solid var(--line); border-radius:14px; padding:20px; max-width:640px; width:100%; }
+  .modal-box h3 { margin:0 0 4px; color:#f4f6fa; }
+  .modal-box p { margin:0 0 12px; color:var(--muted); font-size:13px; }
+  #promptText { width:100%; min-height:280px; background:#0b0f17; border:1px solid rgba(255,255,255,.1); border-radius:10px; padding:14px; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12.5px; color:#cdd5e2; white-space:pre-wrap; }
+  .foot { color:var(--muted); font-size:12px; text-align:center; margin-top:20px; }
+  .foot a { color:#fdba74; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="logo">🛠️</div>
+    <div class="brand">ReviewTap <span>Sites</span></div>
+  </header>
+  <h1>Command Center</h1>
+  <p class="sub">Find no-website tradies → generate a Hostinger prompt → track every lead through the call. All in one place.</p>
+
+  <!-- FIND -->
+  <section class="card">
+    <p class="sec-title">1 · Find leads</p>
+    <div class="keybar">
+      <div class="f"><label>Google API key <span class="hint">saved in this browser</span></label><input id="apiKey" type="password" placeholder="Paste your Google Places API key"></div>
+      <button onclick="saveKey()">Save</button>
+    </div>
+    <details class="guide"><summary>❓ No key yet?</summary>
+      <ol>
+        <li>Go to <a href="https://console.cloud.google.com/" target="_blank" rel="noopener">console.cloud.google.com</a>, sign in.</li>
+        <li>New Project → enable billing (free $200/mo credit).</li>
+        <li>APIs &amp; Services → Library → enable <b>Places API (New)</b> + <b>Maps JavaScript API</b>.</li>
+        <li>Credentials → Create Credentials → API key → set Application restrictions to <b>None</b> → copy → paste above.</li>
+      </ol>
+    </details>
+    <div class="row" style="margin-top:14px">
+      <div class="f"><label>Trade</label><input id="trade" placeholder="e.g. plumber" value="plumber"></div>
+      <div class="f"><label>Suburb / area</label><input id="area" placeholder="e.g. Leppington NSW"></div>
+      <button class="primary" id="searchBtn" onclick="findLeads()">🔎 Search</button>
+    </div>
+    <div id="status"></div>
+    <div id="results" style="margin-top:6px"></div>
+  </section>
+
+  <!-- PIPELINE -->
+  <section class="card">
+    <p class="sec-title">2 · My pipeline</p>
+    <div class="counts" id="counts"></div>
+    <div class="row" style="margin-bottom:14px">
+      <div class="f"><label>Filter</label>
+        <select id="filter" onchange="renderPipeline()">
+          <option value="all">All leads</option>
+          <option value="new">New</option>
+          <option value="called">Called</option>
+          <option value="interested">Interested</option>
+          <option value="demo">Demo built</option>
+          <option value="won">Won</option>
+          <option value="lost">Lost</option>
+        </select>
+      </div>
+      <button onclick="exportCSV()">⬇️ Export CSV</button>
+    </div>
+    <div id="pipeline"></div>
+  </section>
+
+  <p class="foot">ReviewTap Sites Command Center · your leads are saved in this browser · <a href="index.html">back to toolkit</a></p>
+</div>
+
+<!-- Hostinger prompt modal -->
+<div id="modal" onclick="if(event.target.id==='modal')closeModal()">
+  <div class="modal-box">
+    <h3>Hostinger website prompt</h3>
+    <p>Copy this and paste it into Hostinger's AI website builder.</p>
+    <textarea id="promptText" readonly></textarea>
+    <div style="display:flex; gap:10px; margin-top:12px">
+      <button class="primary" onclick="copyPrompt()">📋 Copy</button>
+      <button onclick="closeModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const el = id => document.getElementById(id);
+  const KEY_STORE = 'reviewtap_gmaps_key';
+  const PIPE_STORE = 'reviewtap_pipeline';
+  const STATUSES = [
+    { key:'new', label:'New', cls:'s-new' },
+    { key:'called', label:'Called', cls:'s-called' },
+    { key:'interested', label:'Interested', cls:'s-interested' },
+    { key:'demo', label:'Demo built', cls:'s-demo' },
+    { key:'won', label:'Won', cls:'s-won' },
+    { key:'lost', label:'Lost', cls:'s-lost' }
+  ];
+  const statusCls = k => (STATUSES.find(s=>s.key===k)||STATUSES[0]).cls;
+
+  let leads = [];
+  try { leads = JSON.parse(localStorage.getItem(PIPE_STORE)) || []; } catch(e){ leads = []; }
+  function savePipe(){ try { localStorage.setItem(PIPE_STORE, JSON.stringify(leads)); } catch(e){} }
+
+  function loadKey(){ try { const k = localStorage.getItem(KEY_STORE); if (k) el('apiKey').value = k; } catch(e){} }
+  function saveKey(){ try { localStorage.setItem(KEY_STORE, el('apiKey').value.trim()); } catch(e){} setStatus('<span class="ok">✓ Key saved.</span>'); }
+  function setStatus(h){ el('status').innerHTML = h; }
+  function esc(s){ return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+  /* ---------- Google search (nearby, no-website) ---------- */
+  function loadMaps(key){
+    return new Promise((resolve, reject) => {
+      if (window.google && window.google.maps && window.google.maps.importLibrary) { resolve(); return; }
+      try {
+        (g=>{var h,a,k,p="The Google Maps JavaScript API",c="google",l="importLibrary",q="__ib__",m=document,b=window;b=b[c]||(b[c]={});var d=b.maps||(b.maps={}),r=new Set,e=new URLSearchParams,u=()=>h||(h=new Promise(async(f,n)=>{await (a=m.createElement("script"));e.set("libraries",[...r]+"");for(k in g)e.set(k.replace(/[A-Z]/g,t=>"_"+t[0].toLowerCase()),g[k]);e.set("callback",c+".maps."+q);a.src=`https://maps.${c}apis.com/maps/api/js?`+e;d[q]=f;a.onerror=()=>h=n(Error(p+" could not load."));a.nonce=m.querySelector("script[nonce]")?.nonce||"";m.head.append(a)}));d[l]?console.warn(p+" only loads once. Ignoring:",g):d[l]=(f,...n)=>r.add(f)&&u().then(()=>d[l](f,...n))})({key:key,v:"weekly",region:"AU",language:"en"});
+        resolve();
+      } catch(e){ reject(e); }
+    });
+  }
+  let lastHits = [];
+  async function findLeads(){
+    const key = el('apiKey').value.trim();
+    if (!key){ setStatus('<div class="err">Paste your Google API key first (see “No key yet?”).</div>'); return; }
+    saveKey();
+    const trade = (el('trade').value||'plumber').trim();
+    const area = (el('area').value||'').trim();
+    if (!area){ setStatus('<div class="err">Enter a suburb or area.</div>'); el('area').focus(); return; }
+    el('searchBtn').disabled = true; el('results').innerHTML = '';
+    setStatus('Searching Google near “' + esc(area) + '”…');
+    const FIELDS = ['displayName','formattedAddress','nationalPhoneNumber','websiteURI','rating','userRatingCount','googleMapsURI','primaryTypeDisplayName','businessStatus'];
+    const tl = trade.toLowerCase();
+    const typeMap = [[/plumb/,'plumber'],[/electric/,'electrician'],[/paint/,'painter'],[/roof/,'roofing_contractor'],[/locksmith/,'locksmith'],[/build|construct|carpent|renovat|handyman|kitchen|bathroom|tiler|tiling/,'general_contractor']];
+    let placeType = null;
+    for (const pr of typeMap){ if (pr[0].test(tl)){ placeType = pr[1]; break; } }
+    try {
+      await loadMaps(key);
+      const { Place } = await google.maps.importLibrary('places');
+      const areaRes = await Place.searchByText({ textQuery: area, fields:['location'], maxResultCount:1 });
+      if (!areaRes.places || !areaRes.places.length){ setStatus('<div class="err">Couldn\'t find “' + esc(area) + '”. Add the state, e.g. “Leppington NSW”.</div>'); el('searchBtn').disabled=false; return; }
+      const loc = areaRes.places[0].location;
+      const lat = (typeof loc.lat==='function')?loc.lat():loc.lat;
+      const lng = (typeof loc.lng==='function')?loc.lng():loc.lng;
+      let places, mode;
+      if (placeType){
+        const r = await Place.searchNearby({ locationRestriction:{ center:{lat:lat,lng:lng}, radius:12000 }, includedTypes:[placeType], fields:FIELDS, maxResultCount:20 });
+        places = r.places; mode='nearby';
+      } else {
+        const r = await Place.searchByText({ textQuery: trade+' in '+area, fields:FIELDS, maxResultCount:20 });
+        places = r.places; mode='text';
+      }
+      const hits = (places||[]).filter(p=>!p.websiteURI && p.businessStatus!=='CLOSED_PERMANENTLY').map(p=>({
+        name: p.displayName || 'Unknown', trade:(p.primaryTypeDisplayName||trade), area:area,
+        address:p.formattedAddress||'', phone:p.nationalPhoneNumber||'', rating:p.rating||null, reviews:p.userRatingCount||0, mapsUri:p.googleMapsURI||''
+      }));
+      lastHits = hits;
+      const note = mode==='text' ? ' <span class="muted">(limited — this trade isn\'t a Google category)</span>' : '';
+      setStatus('<span class="ok">'+hits.length+' with no website</span> out of '+(places?places.length:0)+' nearby.'+note);
+      el('results').innerHTML = hits.length ? hits.map((h,i)=>(
+        '<div class="hit"><div class="info"><div class="n">'+esc(h.name)+'</div>'+
+        '<div class="m">'+esc(h.trade)+' · '+(h.rating?h.rating+'★ ('+h.reviews+')':'no reviews')+' · '+esc(h.phone||'no phone')+'</div></div>'+
+        '<button class="primary sm" onclick="addLead('+i+',this)">➕ Add</button></div>'
+      )).join('') : '<p class="muted">Everyone nearby already has a website — try a neighbouring suburb.</p>';
+    } catch(e){
+      setStatus('<div class="err"><b>Search failed.</b> '+esc(e&&e.message||String(e))+'<br>Check billing is on and both APIs are enabled.</div>');
+    }
+    el('searchBtn').disabled = false;
+  }
+
+  function addLead(i, btn){
+    const h = lastHits[i]; if (!h) return;
+    if (leads.some(l => l.name===h.name && l.phone===h.phone)){ if(btn){btn.textContent='Already added';btn.disabled=true;} return; }
+    leads.unshift({ id:'L'+leads.length+'_'+h.name.replace(/\W/g,'').slice(0,6), name:h.name, trade:h.trade, area:h.area, address:h.address, phone:h.phone, rating:h.rating, reviews:h.reviews, mapsUri:h.mapsUri, status:'new', notes:'', site:'', updated:'' });
+    savePipe(); renderPipeline();
+    if(btn){ btn.textContent='✓ Added'; btn.disabled=true; }
+  }
+
+  /* ---------- Pipeline ---------- */
+  function renderCounts(){
+    el('counts').innerHTML = STATUSES.map(s=>{
+      const n = leads.filter(l=>l.status===s.key).length;
+      return '<span class="pill '+s.cls+'">'+s.label+': '+n+'</span>';
+    }).join('') + '<span class="pill s-new">Total: '+leads.length+'</span>';
+  }
+  function renderPipeline(){
+    renderCounts();
+    const f = el('filter').value;
+    const list = leads.filter(l => f==='all' || l.status===f);
+    if (!list.length){ el('pipeline').innerHTML = '<p class="muted">'+(leads.length?'No leads in this stage.':'No leads yet — search above and hit “Add”.')+'</p>'; return; }
+    el('pipeline').innerHTML = list.map(l => {
+      const idx = leads.indexOf(l);
+      const opts = STATUSES.map(s=>'<option value="'+s.key+'"'+(s.key===l.status?' selected':'')+'>'+s.label+'</option>').join('');
+      const stCls = statusCls(l.status);
+      return '<div class="lead">'+
+        '<div class="head"><span class="name">'+esc(l.name)+'</span><span class="pill '+stCls+'">'+(STATUSES.find(s=>s.key===l.status)||{}).label+'</span></div>'+
+        '<div class="meta">'+esc(l.trade)+' · '+(l.rating?l.rating+'★ ('+l.reviews+')':'no reviews')+' · '+esc(l.area)+'</div>'+
+        (l.phone?'<div class="meta">📞 <a class="tel" href="tel:'+esc(l.phone.replace(/\s/g,''))+'">'+esc(l.phone)+'</a></div>':'')+
+        '<div class="grid2">'+
+          '<div><label>Status</label><select onchange="setField('+idx+',\'status\',this.value); renderPipeline()">'+opts+'</select></div>'+
+          '<div><label>Notes</label><textarea rows="1" onchange="setField('+idx+',\'notes\',this.value)" placeholder="Call notes…">'+esc(l.notes)+'</textarea></div>'+
+        '</div>'+
+        '<div class="grid2" style="margin-top:8px"><div><label>Live site URL</label><input onchange="setField('+idx+',\'site\',this.value)" placeholder="paste built site link" value="'+esc(l.site)+'"></div>'+
+          '<div>'+(l.site?'<label>Link</label><a class="sitelink" href="'+esc(l.site)+'" target="_blank" rel="noopener">'+esc(l.site)+' ↗</a>':'<label>&nbsp;</label><span class="muted">Add the site once built</span>')+'</div></div>'+
+        '<div class="actions">'+
+          '<button class="primary sm" onclick="openPrompt('+idx+')">📝 Hostinger prompt</button>'+
+          (l.mapsUri?'<a href="'+esc(l.mapsUri)+'" target="_blank" rel="noopener"><button class="sm">🗺️ Maps</button></a>':'')+
+          '<button class="sm" onclick="delLead('+idx+')">🗑️ Remove</button>'+
+        '</div></div>';
+    }).join('');
+  }
+  function setField(i, k, v){ if(!leads[i])return; leads[i][k]=v; leads[i].updated=new Date().toISOString().slice(0,10); savePipe(); }
+  function delLead(i){ if(!confirm('Remove this lead?'))return; leads.splice(i,1); savePipe(); renderPipeline(); }
+
+  /* ---------- Hostinger prompt ---------- */
+  function hostingerPrompt(l){
+    return 'Create a professional, mobile-friendly website for a local '+l.trade+' business.\n\n'+
+      'Business name: '+l.name+'\n'+
+      'Trade: '+l.trade+'\n'+
+      'Service area: '+l.area+'\n'+
+      (l.phone?'Phone: '+l.phone+'\n':'')+
+      (l.rating?'Google rating: '+l.rating+' stars ('+l.reviews+' reviews)\n':'')+
+      '\nWhat I want:\n'+
+      '- A modern, trustworthy site that makes them look established and professional\n'+
+      '- Pages: Home (with a strong hero headline about getting more work + a clear "Get a Free Quote" and "Call Now" button), Services, About, Reviews, and Contact\n'+
+      '- Emphasise the trade and location for local Google searches (e.g. "'+l.trade+' in '+l.area+'")\n'+
+      (l.phone?'- A click-to-call button using '+l.phone+' and a simple quote/contact form\n':'- A simple quote/contact form and a prominent call button\n')+
+      '- Clean, premium design with a colour scheme that suits a '+l.trade+'\n'+
+      '- Warm, down-to-earth, trustworthy tone aimed at local homeowners\n'+
+      '- Fast loading and looks great on a phone';
+  }
+  function openPrompt(i){ const l=leads[i]; if(!l)return; el('promptText').value = hostingerPrompt(l); el('modal').classList.add('open'); }
+  function closeModal(){ el('modal').classList.remove('open'); }
+  function copyPrompt(){ const ta=el('promptText'); ta.select(); ta.setSelectionRange(0,99999);
+    const done=()=>{ const b=event.target; const o=b.textContent; b.textContent='✓ Copied!'; setTimeout(()=>b.textContent=o,1500); };
+    if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(ta.value).then(done).catch(done); } else { document.execCommand('copy'); done(); }
+  }
+
+  /* ---------- Export ---------- */
+  function exportCSV(){
+    if(!leads.length){ alert('No leads to export yet.'); return; }
+    const head = ['Name','Trade','Area','Phone','Rating','Reviews','Status','Notes','SiteURL'];
+    const rows = leads.map(l=>[l.name,l.trade,l.area,l.phone,l.rating||'',l.reviews||'',l.status,(l.notes||'').replace(/\n/g,' '),l.site||'']
+      .map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(','));
+    const csv = head.join(',')+'\n'+rows.join('\n');
+    const blob = new Blob([csv], {type:'text/csv'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'reviewtap-leads.csv'; a.click();
+  }
+
+  loadKey(); renderPipeline();
+</script>
+</body>
+</html>
