@@ -105,16 +105,14 @@
   function saveKey(){ try { localStorage.setItem(KEY_STORE, el('apiKey').value.trim()); } catch(e){} setStatus('<span class="ok">✓ Key saved.</span>'); }
   function setStatus(html){ el('status').innerHTML = html; }
 
-  let mapsLoaded = false;
   function loadMaps(key){
     return new Promise((resolve, reject) => {
       if (window.google && window.google.maps && window.google.maps.importLibrary) { resolve(); return; }
-      const s = document.createElement('script');
-      s.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(key) + '&v=weekly&libraries=places&loading=async&region=AU&language=en';
-      s.async = true;
-      s.onload = () => resolve();
-      s.onerror = () => reject(new Error('Could not load Google Maps. Check your internet or the key.'));
-      document.head.appendChild(s);
+      try {
+        // Google's official inline bootstrap loader — sets up google.maps.importLibrary
+        (g=>{var h,a,k,p="The Google Maps JavaScript API",c="google",l="importLibrary",q="__ib__",m=document,b=window;b=b[c]||(b[c]={});var d=b.maps||(b.maps={}),r=new Set,e=new URLSearchParams,u=()=>h||(h=new Promise(async(f,n)=>{await (a=m.createElement("script"));e.set("libraries",[...r]+"");for(k in g)e.set(k.replace(/[A-Z]/g,t=>"_"+t[0].toLowerCase()),g[k]);e.set("callback",c+".maps."+q);a.src=`https://maps.${c}apis.com/maps/api/js?`+e;d[q]=f;a.onerror=()=>h=n(Error(p+" could not load."));a.nonce=m.querySelector("script[nonce]")?.nonce||"";m.head.append(a)}));d[l]?console.warn(p+" only loads once. Ignoring:",g):d[l]=(f,...n)=>r.add(f)&&u().then(()=>d[l](f,...n))})({key:key,v:"weekly",region:"AU",language:"en"});
+        resolve();
+      } catch (e) { reject(e); }
     });
   }
 
@@ -130,26 +128,44 @@
 
     el('searchBtn').disabled = true;
     el('results').innerHTML = '';
-    setStatus('Searching Google for “' + esc(trade + ' in ' + area) + '”…');
+    setStatus('Searching Google near “' + esc(area) + '” for ' + esc(trade) + 's…');
+
+    const FIELDS = ['displayName','formattedAddress','nationalPhoneNumber','websiteURI','rating','userRatingCount','googleMapsURI','primaryTypeDisplayName','businessStatus'];
+    const tl = trade.toLowerCase();
+    const typeMap = [[/plumb/,'plumber'],[/electric/,'electrician'],[/paint/,'painter'],[/roof/,'roofing_contractor'],[/locksmith/,'locksmith'],[/build|construct|carpent|renovat|handyman|kitchen|bathroom|tiler|tiling/,'general_contractor']];
+    let placeType = null;
+    for (const pair of typeMap){ if (pair[0].test(tl)){ placeType = pair[1]; break; } }
 
     try {
       await loadMaps(key);
       const { Place } = await google.maps.importLibrary('places');
-      const { places } = await Place.searchByText({
-        textQuery: trade + ' in ' + area,
-        fields: ['displayName','formattedAddress','nationalPhoneNumber','websiteURI','rating','userRatingCount','googleMapsURI','primaryTypeDisplayName','businessStatus'],
-        maxResultCount: 20,
-        isOpenNow: false
-      });
+
+      // 1) find the centre of the suburb (using Places, so no extra API needed)
+      const areaRes = await Place.searchByText({ textQuery: area, fields: ['location'], maxResultCount: 1 });
+      if (!areaRes.places || !areaRes.places.length){ setStatus('<div class="err">Couldn\'t find “' + esc(area) + '”. Try adding the state, e.g. “Leppington NSW”.</div>'); el('searchBtn').disabled = false; return; }
+      const loc = areaRes.places[0].location;
+      const lat = (typeof loc.lat === 'function') ? loc.lat() : loc.lat;
+      const lng = (typeof loc.lng === 'function') ? loc.lng() : loc.lng;
+
+      // 2) nearby search surfaces the small, no-website businesses (text search hides them)
+      let places, mode;
+      if (placeType){
+        const r = await Place.searchNearby({ locationRestriction: { center: { lat: lat, lng: lng }, radius: 12000 }, includedTypes: [placeType], fields: FIELDS, maxResultCount: 20 });
+        places = r.places; mode = 'nearby';
+      } else {
+        const r = await Place.searchByText({ textQuery: trade + ' in ' + area, fields: FIELDS, maxResultCount: 20 });
+        places = r.places; mode = 'text';
+      }
 
       const total = places ? places.length : 0;
       const leads = (places || []).filter(p => !p.websiteURI && p.businessStatus !== 'CLOSED_PERMANENTLY');
 
-      if (total === 0){ setStatus('<div class="err">No results — try a broader area (e.g. add the state) or a different trade.</div>'); el('searchBtn').disabled = false; return; }
+      if (total === 0){ setStatus('<div class="err">No ' + esc(trade) + 's found near there. Try a bigger nearby town.</div>'); el('searchBtn').disabled = false; return; }
 
-      setStatus('<span class="ok">Found ' + leads.length + ' with no website</span> out of ' + total + ' businesses. These are your leads 👇');
+      const note = (mode === 'text') ? ' <span class="muted">(this trade isn\'t a Google category, so results are limited — the manual finder may catch more.)</span>' : '';
+      setStatus('<span class="ok">' + leads.length + ' with no website</span> out of ' + total + ' nearby. These are your leads 👇' + note);
 
-      if (leads.length === 0){ el('results').innerHTML = '<p class="muted">Every result here already has a website. Try a nearby suburb or a different trade.</p>'; el('searchBtn').disabled = false; return; }
+      if (leads.length === 0){ el('results').innerHTML = '<p class="muted">Every one nearby already has a website. Try a neighbouring suburb.</p>'; el('searchBtn').disabled = false; return; }
 
       el('results').innerHTML = leads.map((p, i) => {
         const name = esc(p.displayName || 'Unknown business');
