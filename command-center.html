@@ -127,6 +127,8 @@
         </select>
       </div>
       <button onclick="exportCSV()">⬇️ Export CSV</button>
+      <button onclick="document.getElementById('importFile').click()">⬆️ Import CSV</button>
+      <input type="file" id="importFile" accept=".csv,text/csv" style="display:none" onchange="importCSV(this)">
     </div>
     <div id="pipeline"></div>
   </section>
@@ -306,6 +308,37 @@
     const csv = head.join(',')+'\n'+rows.join('\n');
     const blob = new Blob([csv], {type:'text/csv'});
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'reviewtap-leads.csv'; a.click();
+  }
+  function parseCSV(text){
+    const rows=[]; let row=[], val='', q=false;
+    for (let i=0;i<text.length;i++){ const c=text[i];
+      if (q){ if (c==='"'){ if (text[i+1]==='"'){ val+='"'; i++; } else q=false; } else val+=c; }
+      else { if (c==='"') q=true; else if (c===','){ row.push(val); val=''; } else if (c==='\n'){ row.push(val); rows.push(row); row=[]; val=''; } else if (c!=='\r') val+=c; }
+    }
+    if (val!=='' || row.length){ row.push(val); rows.push(row); }
+    return rows;
+  }
+  function importCSVText(text){
+    const rows = parseCSV(text).filter(r => r.length && r.some(c=>c!==''));
+    if (!rows.length) return 0;
+    const header = rows.shift().map(h=>h.trim().toLowerCase());
+    const col = n => header.indexOf(n);
+    let added = 0;
+    rows.forEach(r => {
+      const name = (r[col('name')]||'').trim(); if (!name) return;
+      const phone = (r[col('phone')]||'').trim();
+      if (leads.some(l => (l.name||'').trim().toLowerCase()===name.toLowerCase() && (!l.phone || !phone || l.phone===phone))) return;
+      leads.push({ id:'L'+leads.length+'_'+name.replace(/\W/g,'').slice(0,6), name:name, trade:(r[col('trade')]||'').trim(), area:(r[col('area')]||'').trim(), address:'', phone:phone, rating: parseFloat(r[col('rating')])||null, reviews: parseInt(r[col('reviews')])||0, mapsUri:'', status:(r[col('status')]||'new').trim()||'new', notes:(r[col('notes')]||'').trim(), site:(r[col('siteurl')]||'').trim(), updated:'' });
+      added++;
+    });
+    savePipe(); renderPipeline();
+    return added;
+  }
+  function importCSV(input){
+    const f = input.files[0]; if (!f) return;
+    const rd = new FileReader();
+    rd.onload = e => { try { const n = importCSVText(e.target.result); alert(n + ' new lead(s) imported.'); } catch(err){ alert('Sorry, couldn\'t read that CSV file.'); } input.value=''; };
+    rd.readAsText(f);
   }
 
   loadKey(); renderPipeline();
